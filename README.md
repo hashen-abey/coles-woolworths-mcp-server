@@ -1,0 +1,1 @@
+# Coles and Woolworths MCP Server
