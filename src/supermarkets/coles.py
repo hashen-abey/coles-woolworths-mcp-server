@@ -4,6 +4,9 @@ import requests
 import json
 from datetime import datetime
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Store information
 STORE_NAME = "coles"
@@ -12,7 +15,7 @@ API_URL = "https://www.coles.com.au/api/bff/products"
 
 # Coles API key - provided by the user
 # In a production environment, this should be stored securely, not hardcoded
-API_KEY = "eae83861d1cd4de6bb9cd8a2cd6f041e"
+API_KEY = os.getenv("COLES_API_KEY")
 
 # Default store ID - provided in the example URL
 DEFAULT_STORE_ID = "0584"
