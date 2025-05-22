@@ -13,7 +13,7 @@ An experimental Model Context Protocol (MCP) server implementation that allows A
 
 1. Clone this repository
 ```bash
-git clone https://github.com/yourusername/coles-woolies-mcp.git
+git clone https://github.com/hung-ngm/coles-woolworths-mcp-server.git
 ```
 
 2. Navigate to the project directory
