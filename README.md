@@ -6,7 +6,7 @@ An experimental Model Context Protocol (MCP) server implementation that allows A
 
 ### Use with Claude Desktop
 
-![Demo Video](./assets/demo.mov)
+![Demo Video](./assets/demo.mp4)
 
 ## Features
 
