@@ -2,6 +2,12 @@
 
 An experimental Model Context Protocol (MCP) server implementation that allows AI assistants to search for product information from Australia's major supermarkets: Coles and Woolworths. This server exposes product search functionality through the MCP protocol, making it easy for AI assistants to retrieve product pricing and details.
 
+## Demo
+
+### Use with Claude Desktop
+
+![Demo Video](./assets/demo.mov)
+
 ## Features
 
 - **Product Search**: Search for products at both Coles and Woolworths supermarkets
