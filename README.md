@@ -2,6 +2,10 @@
 
 An experimental Model Context Protocol (MCP) server implementation that allows AI assistants to search for product information from Australia's major supermarkets: Coles and Woolworths. This server exposes product search functionality through the MCP protocol, making it easy for AI assistants to retrieve product pricing and details.
 
+<a href="https://glama.ai/mcp/servers/@hung-ngm/coles-woolworths-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@hung-ngm/coles-woolworths-mcp-server/badge" alt="coles-woolworths MCP server" />
+</a>
+
 ## Demo
 
 ### Use with Claude Desktop
