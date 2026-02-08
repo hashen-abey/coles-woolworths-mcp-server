@@ -1,5 +1,8 @@
 import asyncio
+import os
+
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 # Import from supermarkets package
 from src.supermarkets import (
@@ -9,12 +12,38 @@ from src.supermarkets import (
     woolworths_search_products,
 )
 
-# Initialize FastMCP server
-mcp = FastMCP("supermarket-mcp", host="localhost", port=7860)
+# ---- Transport Security (fixes 421 / Invalid Host header on Render) ----
+# Allow your Render public hostname. This prevents DNS-rebinding protection
+# from rejecting legitimate requests. See MCP Python SDK guidance. :contentReference[oaicite:1]{index=1}
+RENDER_HOST = "coles-woolworths-mcp-server.onrender.com"
+
+transport_security = TransportSecuritySettings(
+    enable_dns_rebinding_protection=True,
+    allowed_hosts=[
+        f"{RENDER_HOST}:*",
+        "localhost:*",
+        "127.0.0.1:*",
+    ],
+    allowed_origins=[
+        f"https://{RENDER_HOST}",
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+    ],
+)
+
+# Initialize FastMCP server (do NOT hardcode host='localhost' for remote deployment)
+mcp = FastMCP(
+    "supermarket-mcp",
+    transport_security=transport_security,
+)
 
 
 @mcp.tool()
-async def get_coles_products(query: str, store_id: str = COLES_DEFAULT_STORE_ID, limit: int = 10) -> str:
+async def get_coles_products(
+    query: str,
+    store_id: str = COLES_DEFAULT_STORE_ID,
+    limit: int = 10,
+) -> str:
     """Search for products at Coles.
 
     Args:
@@ -23,24 +52,20 @@ async def get_coles_products(query: str, store_id: str = COLES_DEFAULT_STORE_ID,
         limit: Maximum number of products to return.
     """
     try:
-        # The limit parameter in coles_search_products's signature is not used in its API call.
-        # We will fetch all available (up to API's own limit) and then slice.
-        # Also, the original coles_search_products signature includes a limit, but it's not used.
-        # Forcing keyword arguments for clarity with asyncio.to_thread
         search_results = await asyncio.to_thread(
             coles_search_products,
             query=query,
-            store_id=store_id
-            # limit parameter is not passed here as the underlying coles_search_products doesn't use it in API call
+            store_id=store_id,
         )
 
         if search_results.get("status") == "error":
-            return f"Error fetching Coles products: {search_results.get('message', 'Unknown error')}\nResponse: {search_results.get('response_text', '')}"
+            return (
+                f"Error fetching Coles products: {search_results.get('message', 'Unknown error')}\n"
+                f"Response: {search_results.get('response_text', '')}"
+            )
 
-        # extract_products is CPU-bound/quick, but run in thread for consistency with I/O
         products = await asyncio.to_thread(coles_extract_products, search_results)
 
-        # Apply limit after extraction
         products = products[: min(limit, len(products))]
 
         if not products:
@@ -48,12 +73,13 @@ async def get_coles_products(query: str, store_id: str = COLES_DEFAULT_STORE_ID,
 
         formatted_products = []
         for p in products:
-            price_str = f"${p['price']:.2f}" if p['price'] is not None else "N/A"
-            unit_str = p['unit'] if p['unit'] else "N/A" # Ensure unit is not None
+            price_str = f"${p['price']:.2f}" if p.get("price") is not None else "N/A"
+            unit_str = p.get("unit") or "N/A"
             formatted_products.append(
-                f"Name: {p['name']}\nPrice: {price_str}\nUnit: {unit_str}\nStore: {p['store']}"
+                f"Name: {p.get('name','')}\nPrice: {price_str}\nUnit: {unit_str}\nStore: {p.get('store','')}"
             )
         return "\n---\n".join(formatted_products)
+
     except Exception as e:
         return f"An unexpected error occurred in get_coles_products: {str(e)}"
 
@@ -70,11 +96,12 @@ async def get_woolworths_products(query: str, limit: int = 10) -> str:
         search_results = await asyncio.to_thread(woolworths_search_products, query=query)
 
         if search_results.get("status") == "error":
-            return f"Error fetching Woolworths products: {search_results.get('message', 'Unknown error')}\nResponse: {search_results.get('response_text', '')}"
+            return (
+                f"Error fetching Woolworths products: {search_results.get('message', 'Unknown error')}\n"
+                f"Response: {search_results.get('response_text', '')}"
+            )
 
         products = search_results.get("products", [])
-
-        # Apply limit after fetching
         products = products[: min(limit, len(products))]
 
         if not products:
@@ -82,16 +109,23 @@ async def get_woolworths_products(query: str, limit: int = 10) -> str:
 
         formatted_products = []
         for p in products:
-            price_str = f"${p['price']:.2f}" if p['price'] is not None else "N/A"
-            unit_str = p['unit'] if p['unit'] else "N/A" # Ensure unit is not None
+            price_str = f"${p['price']:.2f}" if p.get("price") is not None else "N/A"
+            unit_str = p.get("unit") or "N/A"
             formatted_products.append(
-                f"Name: {p['name']}\nPrice: {price_str}\nUnit: {unit_str}\nStore: {p['store']}"
+                f"Name: {p.get('name','')}\nPrice: {price_str}\nUnit: {unit_str}\nStore: {p.get('store','')}"
             )
         return "\n---\n".join(formatted_products)
+
     except Exception as e:
         return f"An unexpected error occurred in get_woolworths_products: {str(e)}"
 
 
 if __name__ == "__main__":
-    # Initialize and run the server
-    mcp.run(transport="stdio")
+    # Local dev convenience ONLY.
+    # On Render you will start it via:
+    #   fastmcp run main.py --transport http|sse --host 0.0.0.0 --port $PORT
+    transport = os.getenv("FASTMCP_TRANSPORT", "http")
+    host = os.getenv("FASTMCP_HOST", "127.0.0.1")
+    port = int(os.getenv("FASTMCP_PORT", "8000"))
+
+    mcp.run(transport=transport, host=host, port=port)
