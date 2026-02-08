@@ -17,16 +17,31 @@ from src.supermarkets import (
 # from rejecting legitimate requests. See MCP Python SDK guidance. :contentReference[oaicite:1]{index=1}
 RENDER_HOST = "coles-woolworths-mcp-server.onrender.com"
 
+from mcp.server.transport_security import TransportSecuritySettings
+
+RENDER_HOST = "coles-woolworths-mcp-server.onrender.com"
+
 transport_security = TransportSecuritySettings(
     enable_dns_rebinding_protection=True,
     allowed_hosts=[
+        # allow both styles
+        RENDER_HOST,
         f"{RENDER_HOST}:*",
+        f"{RENDER_HOST}:443",
+
+        # local dev
+        "localhost",
         "localhost:*",
+        "127.0.0.1",
         "127.0.0.1:*",
+        "0.0.0.0",
+        "0.0.0.0:*",
     ],
     allowed_origins=[
         f"https://{RENDER_HOST}",
+        "http://localhost",
         "http://localhost:*",
+        "http://127.0.0.1",
         "http://127.0.0.1:*",
     ],
 )
